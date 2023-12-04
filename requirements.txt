@@ -1,0 +1,13 @@
+# core requirements
+scipy
+mpmath
+numpy
+torch
+platformdirs
+joblib
+
+# development requirements
+pytest
+ipykernel
+matplotlib
+line_profiler[ipython]
