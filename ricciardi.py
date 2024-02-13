@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 sqrtpi = torch.pi**0.5
 
@@ -23,6 +24,35 @@ def dawsn(x):
             0.5 * (1 + (5.000381123e-1 + 7.449387745e-1 / (-2.748627766e0 + t)) / t) / x,
         ),
     )
+
+
+# def dawsn2(x, N=6, h=0.4):
+#     """
+#     Dawson function evaluation based on Numerical Recipes, seems slower than rational approximation
+#     """
+#     A1, A2, A3 = 2.0 / 3.0, 0.4, 2.0 / 7.0
+#     absx = x.abs()
+#     x2 = x**2
+#     n0 = 2 * (0.5 * absx / h + 0.5).round()
+#     xp = absx - n0 * h
+#     e1 = torch.exp(2 * xp * h)
+#     e2 = e1**2
+#     d1 = n0 + 1
+#     d2 = d1 - 2
+#     c = np.exp(-(np.arange(1, 2 * N, 2) * h)**2)
+
+#     out = 0.0
+#     for i in range(N):
+#         out += c[i] * (e1 / d1 + 1 / (d2 * e1))
+#         d1 += 2
+#         d2 -= 2
+#         e1 *= e2
+
+#     return torch.where(
+#         absx < 0.2,
+#         x * (1.0 - A1 * x2 * (1.0 - A2 * x2 * (1.0 - A3 * x2))),
+#         1 / sqrtpi * torch.exp(-xp**2) * x.sign() * out,
+#     )
 
 
 class Erfi(torch.autograd.Function):
