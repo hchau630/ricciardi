@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 
+import integrate
+
 sqrtpi = torch.pi**0.5
 
 
@@ -81,36 +83,58 @@ def erfi(x):
     return result
 
 
+# class Ierfcx(torch.autograd.Function):
+#     @staticmethod
+#     def forward(x):
+#         ax = x.abs()
+#         u = ax**-2
+#         v = (ax - 3.75) / (ax + 3.75)
+#         out = torch.where(
+#             ax >= 4.1,
+#             1 / sqrtpi * (torch.log(ax) + (0.25 + (-0.1875 + (0.3125 + (-0.8203125 + (2.953125 + (-13.53515625 + 75.41015625 * u) * u) * u) * u) * u) * u) * u) + 5.538959341195e-01,  # asymptotic expansion
+#             torch.log(1.0 + ax) * (8.402081835053e-01 + (-1.506407525002e-01 + (1.611762752505e-02 + (-1.336764713619e-02 + (-1.433259084023e-02 + (-1.050071231432e-02 + (-2.547932936248e-02 + (-1.672446952458e-02 - 7.747389892958e-03 * v) * v) * v) * v) * v) * v) * v) * v),  # chebyshev approximation
+#         )
+#         out = torch.where(x >= 0, out, out - 2 * torch.exp(ax**2) * dawsn(ax))
+#         return out
+
+#     @staticmethod
+#     def setup_context(ctx, inputs, output):
+#         ctx.save_for_backward(*inputs)
+
+#     @staticmethod
+#     def backward(ctx, grad_output):
+#         x, = ctx.saved_tensors
+#         return torch.special.erfcx(x) * grad_output
+
+
+# def ierfcx(x):
+#     """
+#     Integral of erfcx(t) from 0 to x. Manual implementation of backward
+#     yields ~15x speedup on backward pass.
+#     """
+#     return Ierfcx.apply(x)
+
+
 class Ierfcx(torch.autograd.Function):
     @staticmethod
-    def forward(x):
-        ax = x.abs()
-        u = ax**-2
-        v = (ax - 3.75) / (ax + 3.75)
-        out = torch.where(
-            ax >= 4.1,
-            1 / sqrtpi * (torch.log(ax) + (0.25 + (-0.1875 + (0.3125 + (-0.8203125 + (2.953125 + (-13.53515625 + 75.41015625 * u) * u) * u) * u) * u) * u) * u) + 5.538959341195e-01,  # asymptotic expansion
-            torch.log(1.0 + ax) * (8.402081835053e-01 + (-1.506407525002e-01 + (1.611762752505e-02 + (-1.336764713619e-02 + (-1.433259084023e-02 + (-1.050071231432e-02 + (-2.547932936248e-02 + (-1.672446952458e-02 - 7.747389892958e-03 * v) * v) * v) * v) * v) * v) * v) * v),  # chebyshev approximation
-        )
-        out = torch.where(x >= 0, out, out - 2 * torch.exp(ax**2) * dawsn(ax))
-        return out
+    def forward(x, y, n):
+        return integrate.fixed_quad(torch.special.erfcx, x, y, n=n)[0]
 
     @staticmethod
     def setup_context(ctx, inputs, output):
-        ctx.save_for_backward(*inputs)
+        ctx.save_for_backward(inputs[0], inputs[1])
 
     @staticmethod
     def backward(ctx, grad_output):
-        x, = ctx.saved_tensors
-        return torch.special.erfcx(x) * grad_output
+        x, y = ctx.saved_tensors
+        return -torch.special.erfcx(x) * grad_output, torch.special.erfcx(y) * grad_output, None
 
 
-def ierfcx(x):
+def ierfcx(x, y, n=5):
     """
-    Integral of erfcx(t) from 0 to x. Manual implementation of backward
-    yields ~15x speedup on backward pass.
+    Integral of erfcx(t) from x to y using Gauss-Legendre quadrature of order n.
     """
-    return Ierfcx.apply(x)
+    return Ierfcx.apply(x, y, n)
 
 
 def ricciardi(mu, tau=0.02, tau_rp=0.002, sigma_t=0.01, V_r=0.01, theta=0.02):
@@ -120,12 +144,17 @@ def ricciardi(mu, tau=0.02, tau_rp=0.002, sigma_t=0.01, V_r=0.01, theta=0.02):
     max_u = (theta - mu) / sigma_t
 
     if (-min_u).min() > -10:
-        out = 1.0 / (tau_rp + tau * sqrtpi * (ierfcx(-min_u) - ierfcx(-max_u)))  # slightly faster path when there is no extreme value
+        # out = 1.0 / (tau_rp + tau * sqrtpi * (ierfcx(-min_u) - ierfcx(-max_u)))  # slightly faster path when there is no extreme value
+        # out = 1.0 / (tau_rp + tau * sqrtpi * integrate.fixed_quad(torch.special.erfcx, -max_u, -min_u, n=5)[0])  # slightly faster path when there is no extreme value
+        out = 1.0 / (tau_rp + tau * sqrtpi * ierfcx(-max_u, -min_u))  # slightly faster path when there is no extreme value
     else:
         mask = -min_u > -10
         out = torch.empty_like(mu)
-        out[mask] = 1.0 / (tau_rp + tau * sqrtpi * (ierfcx(-min_u[mask]) - ierfcx(-max_u[mask])))
+        # out[mask] = 1.0 / (tau_rp + tau * sqrtpi * (ierfcx(-min_u[mask]) - ierfcx(-max_u[mask])))
+        # out[mask] = 1.0 / (tau_rp + tau * sqrtpi * integrate.fixed_quad(torch.special.erfcx, -max_u[mask], -min_u[mask], n=5)[0])
+        out[mask] = 1.0 / (tau_rp + tau * sqrtpi * ierfcx(-max_u[mask], -min_u[mask]))
         u = max_u[~mask]
         out[~mask] = u * torch.exp(-u**2) / (tau * sqrtpi)  # avoid NaNs - can't use torch.where due to NaN gradient
     
     return out.to(dtype)
+    # return out

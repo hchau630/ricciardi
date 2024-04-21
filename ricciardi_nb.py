@@ -169,8 +169,8 @@ def ierfcx(x, c=8, a=8, xt=4.1, k=3.75):
     
     \int_0^{-x} erfcx(t) dt
     = -\int_0^x erfcx(-t) dt
-    = \int_0^x erfc(t) dt - 2\int_0^x exp(t^2) dt
-    = \int_0^x erfc(t) dt - \sqrt{\pi} erfi(x)
+    = \int_0^x erfcx(t) dt - 2\int_0^x exp(t^2) dt
+    = \int_0^x erfcx(t) dt - \sqrt{\pi} erfi(x)
 
     The default parameters are chosen so that the relative error is less than 1.0e-7.
 
