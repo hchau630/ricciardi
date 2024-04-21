@@ -1,13 +1,7 @@
 # core requirements
 scipy
-mpmath
-numpy
 torch
-platformdirs
-joblib
 
-# development requirements
+# test requirements
+numpy
 pytest
-ipykernel
-matplotlib
-line_profiler[ipython]
