@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=64.0"]  # editable install using setuptool available since v64.0.0
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ricciardi"
+version = "0.1.0"
+description = "PyTorch implementation of the Ricciardi transfer function."
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Ho Yin Chau"},
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "scipy",
+    "torch",
+]
+
+[project.urls]
+repository = "https://github.com/hchau630/ricciardi"

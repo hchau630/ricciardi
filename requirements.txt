@@ -1,7 +1,10 @@
-# core requirements
-scipy
-torch
-
 # test requirements
 numpy
 pytest
+
+# development requirements
+flake8  # linting
+build  # for generating distribution package
+twine  # for uploading package
+
+-e .
