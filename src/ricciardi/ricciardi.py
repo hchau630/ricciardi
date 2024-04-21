@@ -93,8 +93,6 @@ def ricciardi(mu, sigma=0.01, tau=0.02, tau_rp=0.002, V_r=0.01, theta=0.02):
         torch.Tensor: Tensor of firing rates with shape broadcast(mu, sigma, tau, tau_rp, V_r, theta).shape
 
     """
-    dtype = mu.dtype
-    mu = mu.double()  # need double precision input to get single precision output
     u_min = (V_r - mu) / sigma
     u_max = (theta - mu) / sigma
 
@@ -109,4 +107,4 @@ def ricciardi(mu, sigma=0.01, tau=0.02, tau_rp=0.002, V_r=0.01, theta=0.02):
         u = u_max[~mask]
         out[~mask] = u * torch.exp(-(u**2)) / (tau * sqrtpi)
 
-    return out.to(dtype)
+    return out

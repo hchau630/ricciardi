@@ -46,4 +46,4 @@ def test_ricciardi(x, params):
     ],
 )
 def test_ricciardi_grad(x, params):
-    torch.autograd.gradcheck(functools.partial(ricciardi, **params), x, rtol=0.005)
+    torch.autograd.gradcheck(functools.partial(ricciardi, **params), x)
