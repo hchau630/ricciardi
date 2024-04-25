@@ -74,7 +74,7 @@ def ierfcx(x, y, n=5):
     return Ierfcx.apply(x, y, n)
 
 
-def ricciardi(mu, sigma=0.01, tau=0.02, tau_rp=0.002, V_r=0.01, theta=0.02):
+def ricciardi(mu, sigma=0.01, tau=0.02, tau_rp=0.002, V_r=0.01, theta=0.02, n=None):
     """Ricciardi transfer function.
 
     Computes the firing rate of an LIF neuron as a function of the mean and variance
@@ -88,23 +88,33 @@ def ricciardi(mu, sigma=0.01, tau=0.02, tau_rp=0.002, V_r=0.01, theta=0.02):
         tau_rp (float | torch.Tensor, optional): Refractory period.
         V_r (float | torch.Tensor, optional): Reset membrane potential.
         theta (float | torch.Tensor, optional): Firing threshold membrane potential.
+        n (int, optional):
+            Precision level, roughly equivalent to the order of Gauss-Legendre quadrature used to compute
+            the integral of the complementary error function. If None, defaults to 4, 5, or 6 for
+            input dtypes torch.half, torch.float, and torch.double, respectively.
 
     Returns:
         torch.Tensor: Tensor of firing rates with shape broadcast(mu, sigma, tau, tau_rp, V_r, theta).shape
 
     """
-    u_min = (V_r - mu) / sigma
-    u_max = (theta - mu) / sigma
+    dtype = mu.dtype
+    if n is None:
+        n = {torch.half: 4, torch.float: 5, torch.double: 6}[dtype]
 
-    if (-u_min).min() > -10:
+    mu = mu.float() if n <= 5 else mu.double()
+
+    umin = (V_r - mu) / sigma
+    umax = (theta - mu) / sigma
+
+    if (-umin).min() > -10:
         # slightly faster path when there is no extreme value
-        out = 1.0 / (tau_rp + tau * sqrtpi * ierfcx(-u_max, -u_min))
+        out = 1 / (tau_rp + tau * sqrtpi * ierfcx(-umax, -umin, n=n))
     else:
         # Handle extreme values separately to avoid numerical issues
-        mask = -u_min > -10
+        mask = -umin > -10
         out = torch.empty_like(mu)
-        out[mask] = 1.0 / (tau_rp + tau * sqrtpi * ierfcx(-u_max[mask], -u_min[mask]))
-        u = u_max[~mask]
+        out[mask] = 1 / (tau_rp + tau * sqrtpi * ierfcx(-umax[mask], -umin[mask], n=n))
+        u = umax[~mask]
         out[~mask] = u * torch.exp(-(u**2)) / (tau * sqrtpi)
 
-    return out
+    return out.to(dtype)

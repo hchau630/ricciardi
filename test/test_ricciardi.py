@@ -31,10 +31,12 @@ def ricciardi_exact(mu, sigma=0.01, tau=0.02, tau_rp=0.002, V_r=0.01, theta=0.02
         torch.linspace(-10.0, 50.0, 1001),
     ],
 )
-def test_ricciardi(x, params):
+@pytest.mark.parametrize("dtype", [torch.half, torch.float, torch.double])
+def test_ricciardi(x, params, dtype):
+    x = x.to(dtype)
     out = ricciardi(x, **params)
     expected = ricciardi_exact(x.double().numpy(), **params)
-    expected = torch.from_numpy(expected).float().nan_to_num()
+    expected = torch.from_numpy(expected).to(dtype).nan_to_num()
     torch.testing.assert_close(out, expected)
 
 
