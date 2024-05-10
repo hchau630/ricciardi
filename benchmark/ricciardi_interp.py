@@ -18,6 +18,7 @@ class Ricciardi(torch.nn.Module):
         return self._interpolator(x[None, ...])
 
 
+# Code adapted from https://github.com/sbarratt/torch_interpolations
 class RegularGridInterpolator(torch.nn.Module):
     def __init__(self, points, values):
         if not isinstance(points, (tuple, list)) or not all(

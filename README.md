@@ -1,3 +1,5 @@
+![tests workflow status](https://github.com/hchau630/ricciardi/actions/workflows/tests.yml/badge.svg)
+
 # About
 An efficient, GPU-friendly, and differentiable PyTorch implementation of the Ricciardi transfer function based on equations and default parameters from [Sanzeni et al. (2020)](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008165).
 
@@ -5,7 +7,7 @@ An efficient, GPU-friendly, and differentiable PyTorch implementation of the Ric
 For using the ricciardi function in your own code, you can either just copy the source file at `src/ricciardi/ricciardi.py` to your own code, or install the package in your python environment with `pip install ricciardi` and import the function with `from ricciardi import ricciardi`. To run tests, clone the repository, create a new environment, install the neccessary packages with `pip install -r requirements`, and run the command `pytest`.
 
 # Benchmark
-Compare performance with an interpolation-based approach. Forward pass is slightly slower, but backward pass is >2x faster on GPU.
+Compare performance with a naive, linear interpolation-based approach. Forward pass is slightly slower, but backward pass is >2x faster on GPU.
 
 Results on CPU (AMD EPYC 7662, 8 cores) (`python benchmark/benchmark.py -N 100000 -r 100`):
 ```

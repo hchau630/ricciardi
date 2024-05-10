@@ -66,14 +66,20 @@ def main():
     print("backward pass")
     timings = timeit.Timer(
         "y.backward()",
-        setup="x = torch.linspace(-0.08, 1.0, args.N, requires_grad=True, device=device); y = ricciardi(x).sum()",
+        setup=(
+            "x = torch.linspace(-0.08, 1.0, args.N, requires_grad=True, device=device);"
+            "y = ricciardi(x).sum()"
+        ),
         globals={**locals(), **globals()},
     ).repeat(repeat=args.repeat, number=1)
     print(f"ricciardi: {summary(timings, args.stats)}")
 
     timings = timeit.Timer(
         "y.backward()",
-        setup="x = torch.linspace(-0.08, 1.0, args.N, requires_grad=True, device=device); y = ricciardi_interp(x).sum()",
+        setup=(
+            "x = torch.linspace(-0.08, 1.0, args.N, requires_grad=True, device=device);"
+            "y = ricciardi_interp(x).sum()"
+        ),
         globals={**locals(), **globals()},
     ).repeat(repeat=args.repeat, number=1)
     print(f"ricciardi_interp: {summary(timings, args.stats)}")

@@ -31,7 +31,9 @@ def ricciardi_exact(mu, sigma=0.01, tau=0.02, tau_rp=0.002, V_r=0.01, theta=0.02
         torch.linspace(-10.0, 50.0, 1001),
     ],
 )
-@pytest.mark.parametrize("dtype", [torch.half, torch.float, torch.double])
+@pytest.mark.parametrize(
+    "dtype", [torch.bfloat16, torch.half, torch.float, torch.double]
+)
 def test_ricciardi(x, params, dtype):
     x = x.to(dtype)
     out = ricciardi(x, **params)

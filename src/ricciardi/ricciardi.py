@@ -1,4 +1,8 @@
+from collections.abc import Callable
+from typing import Union
+
 import torch
+from torch import Tensor
 from scipy import special
 
 sqrtpi = torch.pi**0.5
@@ -19,18 +23,25 @@ def _cached_roots_legendre(n):
 _cached_roots_legendre.cache = dict()
 
 
-def fixed_quad(func, a, b, args=(), n=5):
+def fixed_quad(
+    func: Callable[[Tensor], Tensor],
+    a: Tensor,
+    b: Union[float, Tensor],
+    args: tuple = (),
+    n: int = 5,
+) -> tuple[Tensor, None]:
     """Like scipy.integrate.fixed_quad, but for tensor inputs a, b
 
     Args:
-        func (Callable[[torch.Tensor, ...], torch.Tensor]): Integrand.
-        a: (torch.Tensor): Lower limits of integral.
-        b: (float | torch.Tensor): Upper limit(s) of integral.
-        args (tuple, optional): Additional arguments passed to func.
-        n (int, optional): Order of Gauss-Legendre quadrature.
+        func: Integrand.
+        a: Lower limits of integral.
+        b: Upper limit(s) of integral.
+        args (optional): Additional arguments passed to func.
+        n (optional): Order of Gauss-Legendre quadrature.
 
     Returns:
-        torch.Tensor: Tensor with shape func(broadcast(a, b)).shape
+        A tuple (value, None), where value is a tensor with shape func(broadcast(a, b)).shape.
+        The additional None is for consistency with scipy.integrate.fixed_quad.
 
     """
     x, w = _cached_roots_legendre(n)
@@ -59,22 +70,30 @@ class Ierfcx(torch.autograd.Function):
         )
 
 
-def ierfcx(x, y, n=5):
+def ierfcx(x: Tensor, y: Union[float, Tensor], n: int = 5) -> Tensor:
     """Integral of erfcx(t) from x to y using Gauss-Legendre quadrature of order n.
 
     Args:
-        x (torch.Tensor): Lower limits of integral.
-        y (float | torch.Tensor): Upper limit(s) of integral.
-        n (int, optional): Order of Gauss-Legendre quadrature.
+        x: Lower limits of integral.
+        y: Upper limit(s) of integral.
+        n (optional): Order of Gauss-Legendre quadrature.
 
     Returns:
-        torch.Tensor: Tensor with shape broadcast(x, y).shape
+        Tensor with shape broadcast(x, y).shape
 
     """
     return Ierfcx.apply(x, y, n)
 
 
-def ricciardi(mu, sigma=0.01, tau=0.02, tau_rp=0.002, V_r=0.01, theta=0.02, n=None):
+def ricciardi(
+    mu: Tensor,
+    sigma: Union[float, Tensor] = 0.01,
+    tau: Union[float, Tensor] = 0.02,
+    tau_rp: Union[float, Tensor] = 0.002,
+    V_r: Union[float, Tensor] = 0.01,
+    theta: Union[float, Tensor] = 0.02,
+    n: Union[int, None] = None,
+) -> Tensor:
     """Ricciardi transfer function.
 
     Computes the firing rate of an LIF neuron as a function of the mean and variance
@@ -82,26 +101,32 @@ def ricciardi(mu, sigma=0.01, tau=0.02, tau_rp=0.002, V_r=0.01, theta=0.02, n=No
     Sanzeni et al. (2020). Default values assume SI units (i.e. seconds and volts).
 
     Args:
-        mu (torch.Tensor): Mean of presynaptic input current.
-        sigma (float | torch.Tensor, optional): Standard deviation of presynaptic input current.
-        tau (float | torch.Tensor, optional): Time constant of the membrane potential.
-        tau_rp (float | torch.Tensor, optional): Refractory period.
-        V_r (float | torch.Tensor, optional): Reset membrane potential.
-        theta (float | torch.Tensor, optional): Firing threshold membrane potential.
-        n (int, optional):
-            Precision level, roughly equivalent to the order of Gauss-Legendre quadrature used to compute
-            the integral of the complementary error function. If None, defaults to 4, 5, or 6 for
-            input dtypes torch.half, torch.float, and torch.double, respectively.
+        mu: Mean of presynaptic input current.
+        sigma (optional): Standard deviation of presynaptic input current.
+        tau (optional): Time constant of the membrane potential.
+        tau_rp (optional): Refractory period.
+        V_r (optional): Reset membrane potential.
+        theta (optional): Firing threshold membrane potential.
+        n (optional): Precision level, roughly equivalent to the order of Gauss-Legendre
+          quadrature used to compute the integral of the complementary error function.
+          If None, defaults to 3, 4, 5, or 6 for input dtypes torch.bfloat16, torch.half,
+          torch.float, and torch.double, respectively.
 
     Returns:
-        torch.Tensor: Tensor of firing rates with shape broadcast(mu, sigma, tau, tau_rp, V_r, theta).shape
+        Tensor of firing rates with shape broadcast(mu, sigma, tau, tau_rp, V_r, theta).shape
 
     """
+    if not isinstance(mu, Tensor) or not torch.is_floating_point(mu):
+        raise TypeError(f"mu must be a floating point tensor.")
+
     dtype = mu.dtype
     if n is None:
-        n = {torch.half: 4, torch.float: 5, torch.double: 6}[dtype]
+        n = {torch.bfloat16: 3, torch.half: 4, torch.float: 5, torch.double: 6}[dtype]
 
-    mu = mu.float() if n <= 5 else mu.double()
+    if n > 5:
+        mu = mu.double()
+    elif dtype in {torch.bfloat16, torch.half}:
+        mu = mu.float()  # torch.special.erfcx does not support bfloat16 or half
 
     umin = (V_r - mu) / sigma
     umax = (theta - mu) / sigma
