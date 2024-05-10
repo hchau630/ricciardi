@@ -117,7 +117,7 @@ def ricciardi(
 
     """
     if not isinstance(mu, Tensor) or not torch.is_floating_point(mu):
-        raise TypeError(f"mu must be a floating point tensor.")
+        raise TypeError("mu must be a floating point tensor.")
 
     dtype = mu.dtype
     if n is None:
