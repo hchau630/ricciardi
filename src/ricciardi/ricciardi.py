@@ -71,8 +71,6 @@ class Ierfcx(torch.autograd.Function):
         # where we expect zero gradients when erfcx results in inf.
         grad_x = grad_x.nan_to_num(nan=torch.nan, posinf=0.0, neginf=0.0) * grad_output
         grad_y = grad_y.nan_to_num(nan=torch.nan, posinf=0.0, neginf=0.0) * grad_output
-        # grad_x = torch.where(grad_x == -torch.inf, 0.0, grad_x * grad_output)
-        # grad_y = torch.where(grad_y == torch.inf, 0.0, grad_y * grad_output)
 
         return (grad_x, grad_y, None)
 
