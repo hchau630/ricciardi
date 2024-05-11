@@ -38,7 +38,7 @@ $\mathrm{erfcx}$ is a native PyTorch function which has high precision for a wid
 
 
 # Benchmark
-Compare performance with a naive, linear interpolation-based approach. Forward pass is slightly slower, but backward pass is >2x faster on GPU.
+Compare performance with a naive, linear interpolation-based approach. Forward pass is slightly faster, and backward pass is much faster (>2x on GPU).
 
 Results on CPU (AMD EPYC 7662, 8 cores) (`python benchmark/benchmark.py -N 100000 -r 100`):
 ```
