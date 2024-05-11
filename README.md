@@ -16,7 +16,7 @@ $$
 where
 
 $$
-u_\mathrm{max}(\mu) = \frac{\theta - \mu}{\sigma},\, u_\mathrm{min}(\mu) = \frac{V_r - \mu}{\sigma}
+u_\mathrm{max}(\mu) = \frac{\theta - \mu}{\sigma}, u_\mathrm{min}(\mu) = \frac{V_r - \mu}{\sigma}
 $$
 
 The integral can be written in terms of the hypergeometric function ${}_2F_2$. However, there is currently no implementation of this hypergeometric function that is performant enough for large neural network simulations. Thus we take the approach of directly computing the integral with a fixed order Gauss-Legendre quadrature rule. We find that an order 5 quadrature is sufficient to obtain good numerical accuracy for realistic parameter regimes.
@@ -43,29 +43,29 @@ Compare performance with a naive, linear interpolation-based approach. Forward p
 Results on CPU (AMD EPYC 7662, 8 cores) (`python benchmark/benchmark.py -N 100000 -r 100`):
 ```
 forward pass, requires_grad=False
-ricciardi: median=1.86 ms, min=1.84 ms (100 repeats)
-ricciardi_interp: median=1.75 ms, min=1.72 ms (100 repeats)
+ricciardi: median=1.81 ms, min=1.79 ms (100 repeats)
+ricciardi_interp: median=1.91 ms, min=1.9 ms (100 repeats)
 
 forward pass, requires_grad=True
-ricciardi: median=1.94 ms, min=1.9 ms (100 repeats)
-ricciardi_interp: median=1.92 ms, min=1.75 ms (100 repeats)
+ricciardi: median=1.8 ms, min=1.79 ms (100 repeats)
+ricciardi_interp: median=2.11 ms, min=1.98 ms (100 repeats)
 
 backward pass
-ricciardi: median=814 μs, min=796 μs (100 repeats)
-ricciardi_interp: median=1.17 ms, min=1.15 ms (100 repeats)
+ricciardi: median=786 μs, min=765 μs (100 repeats)
+ricciardi_interp: median=1.17 ms, min=1.09 ms (100 repeats)
 ```
 
 Results on GPU (Nvidia A40) (`python benchmark/benchmark.py -N 100000 -r 100 --device cuda`):
 ```
 forward pass, requires_grad=False
-ricciardi: median=517 μs, min=508 μs (100 repeats)
-ricciardi_interp: median=460 μs, min=453 μs (100 repeats)
+ricciardi: median=451 μs, min=441 μs (100 repeats)
+ricciardi_interp: median=455 μs, min=448 μs (100 repeats)
 
 forward pass, requires_grad=True
-ricciardi: median=556 μs, min=549 μs (100 repeats)
-ricciardi_interp: median=527 μs, min=520 μs (100 repeats)
+ricciardi: median=478 μs, min=470 μs (100 repeats)
+ricciardi_interp: median=523 μs, min=513 μs (100 repeats)
 
 backward pass
-ricciardi: median=463 μs, min=364 μs (100 repeats)
-ricciardi_interp: median=1.11 ms, min=1.09 ms (100 repeats)
+ricciardi: median=486 μs, min=475 μs (100 repeats)
+ricciardi_interp: median=1.1 ms, min=1.08 ms (100 repeats)
 ```

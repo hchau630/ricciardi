@@ -69,8 +69,10 @@ class Ierfcx(torch.autograd.Function):
         # Handle the case where x or y is too large, resulting in NaN gradients
         # Note that this code is only valid in the context of the Ricciardi function
         # where we expect zero gradients when erfcx results in inf.
-        grad_x = torch.where(grad_x == -torch.inf, 0.0, grad_x * grad_output)
-        grad_y = torch.where(grad_y == torch.inf, 0.0, grad_y * grad_output)
+        grad_x = grad_x.nan_to_num(nan=torch.nan, posinf=0.0, neginf=0.0) * grad_output
+        grad_y = grad_y.nan_to_num(nan=torch.nan, posinf=0.0, neginf=0.0) * grad_output
+        # grad_x = torch.where(grad_x == -torch.inf, 0.0, grad_x * grad_output)
+        # grad_y = torch.where(grad_y == torch.inf, 0.0, grad_y * grad_output)
 
         return (grad_x, grad_y, None)
 
@@ -124,6 +126,7 @@ def ricciardi(
     if not isinstance(mu, Tensor) or torch.is_complex(mu):
         raise TypeError("mu must be a floating point or integer tensor.")
 
+    is_floating_point = torch.is_floating_point(mu)
     dtype = mu.dtype
     if n is None:
         n = {torch.bfloat16: 3, torch.half: 4, torch.double: 6}.get(dtype, 5)
@@ -138,4 +141,7 @@ def ricciardi(
 
     out = (tau_rp + tau * sqrtpi * ierfcx(-umax, -umin, n=n)).reciprocal()
 
-    return out.to(dtype)
+    if is_floating_point:
+        out = out.to(dtype)
+
+    return out

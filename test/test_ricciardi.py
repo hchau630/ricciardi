@@ -38,7 +38,11 @@ def test_ricciardi(x, params, dtype):
     x = x.to(dtype)
     out = ricciardi(x, **params)
     expected = ricciardi_exact(x.double().numpy(), **params)
-    expected = torch.from_numpy(expected).to(dtype).nan_to_num()
+    expected = torch.from_numpy(expected).nan_to_num()
+    if torch.is_floating_point(x):
+        expected = expected.to(dtype)
+    else:
+        expected = expected.float()
     torch.testing.assert_close(out, expected)
 
 
