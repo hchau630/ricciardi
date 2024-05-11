@@ -1,4 +1,5 @@
 import functools
+import itertools
 
 import numpy as np
 from scipy import integrate, special
@@ -8,9 +9,10 @@ import pytest
 from ricciardi import ricciardi
 
 
-@pytest.fixture
-def params():
-    return dict(tau=0.02, tau_rp=0.002, sigma=0.01, V_r=0.01, theta=0.02)
+@pytest.fixture(params=itertools.product([0.01], [0.01, 0.02], [0.002], [0.01], [0.02]))
+def params(request):
+    p = request.param
+    return dict(sigma=p[0], tau=p[1], tau_rp=p[2], V_r=p[3], theta=p[4])
 
 
 @np.vectorize

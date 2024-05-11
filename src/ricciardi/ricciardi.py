@@ -115,7 +115,11 @@ def ricciardi(
         n (optional): Precision level, roughly equivalent to the order of Gauss-Legendre
           quadrature used to compute the integral of the complementary error function.
           If None, defaults to 3, 4, or 6 for input dtypes torch.bfloat16, torch.half,
-          and torch.double respectively, and 5 for other (non-complex) dtypes.
+          and torch.double respectively, and 5 for other (non-complex) dtypes. These
+          defaults are chosen to that with the default values of sigma, tau, tau_rp,
+          V_r, and theta, the error in the output satisfies the default PyTorch tolerances
+          for the corresponding dtype as prescribed in torch.testing.assert_close.
+          Generally, n needs to be increased when V_r is smaller or theta is larger.
 
     Returns:
         Tensor of firing rates with shape broadcast(mu, sigma, tau, tau_rp, V_r, theta).shape
