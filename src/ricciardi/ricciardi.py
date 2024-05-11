@@ -63,11 +63,16 @@ class Ierfcx(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         x, y = ctx.saved_tensors
-        return (
-            -torch.special.erfcx(x) * grad_output,
-            torch.special.erfcx(y) * grad_output,
-            None,
-        )
+        grad_x = -torch.special.erfcx(x)
+        grad_y = torch.special.erfcx(y)
+
+        # Handle the case where x or y is too large, resulting in NaN gradients
+        # Note that this code is only valid in the context of the Ricciardi function
+        # where we expect zero gradients when erfcx results in inf.
+        grad_x = torch.where(grad_x == -torch.inf, 0.0, grad_x * grad_output)
+        grad_y = torch.where(grad_y == torch.inf, 0.0, grad_y * grad_output)
+
+        return (grad_x, grad_y, None)
 
 
 def ierfcx(x: Tensor, y: Union[float, Tensor], n: int = 5) -> Tensor:
@@ -109,37 +114,28 @@ def ricciardi(
         theta (optional): Firing threshold membrane potential.
         n (optional): Precision level, roughly equivalent to the order of Gauss-Legendre
           quadrature used to compute the integral of the complementary error function.
-          If None, defaults to 3, 4, 5, or 6 for input dtypes torch.bfloat16, torch.half,
-          torch.float, and torch.double, respectively.
+          If None, defaults to 3, 4, or 6 for input dtypes torch.bfloat16, torch.half,
+          and torch.double respectively, and 5 for other (non-complex) dtypes.
 
     Returns:
         Tensor of firing rates with shape broadcast(mu, sigma, tau, tau_rp, V_r, theta).shape
 
     """
-    if not isinstance(mu, Tensor) or not torch.is_floating_point(mu):
-        raise TypeError("mu must be a floating point tensor.")
+    if not isinstance(mu, Tensor) or torch.is_complex(mu):
+        raise TypeError("mu must be a floating point or integer tensor.")
 
     dtype = mu.dtype
     if n is None:
-        n = {torch.bfloat16: 3, torch.half: 4, torch.float: 5, torch.double: 6}[dtype]
+        n = {torch.bfloat16: 3, torch.half: 4, torch.double: 6}.get(dtype, 5)
 
     if n > 5:
         mu = mu.double()
-    elif dtype in {torch.bfloat16, torch.half}:
+    elif dtype != torch.double:
         mu = mu.float()  # torch.special.erfcx does not support bfloat16 or half
 
     umin = (V_r - mu) / sigma
     umax = (theta - mu) / sigma
 
-    if (-umin).min() > -10:
-        # slightly faster path when there is no extreme value
-        out = 1 / (tau_rp + tau * sqrtpi * ierfcx(-umax, -umin, n=n))
-    else:
-        # Handle extreme values separately to avoid numerical issues
-        mask = -umin > -10
-        out = torch.empty_like(mu)
-        out[mask] = 1 / (tau_rp + tau * sqrtpi * ierfcx(-umax[mask], -umin[mask], n=n))
-        u = umax[~mask]
-        out[~mask] = u * torch.exp(-(u**2)) / (tau * sqrtpi)
+    out = (tau_rp + tau * sqrtpi * ierfcx(-umax, -umin, n=n)).reciprocal()
 
     return out.to(dtype)
