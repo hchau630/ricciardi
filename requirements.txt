@@ -1,5 +1,9 @@
 # test requirements
 numpy
 pytest
+pytest-cov
+
+# linting requirements
+flake8
 
 -e .

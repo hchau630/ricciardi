@@ -1,7 +1,6 @@
 import itertools
 
 import torch
-
 from ricciardi import ricciardi
 
 
@@ -45,7 +44,8 @@ class RegularGridInterpolator(torch.nn.Module):
     def forward(self, x):
         if len(x) != self.ndim:
             raise ValueError(
-                f"length of x, {len(x)}, must be equal to the number of grid dimensions, {self.ndim}."
+                f"length of x, {len(x)}, must be equal to the number of grid "
+                f"dimensions, {self.ndim}."
             )
 
         idxs = []

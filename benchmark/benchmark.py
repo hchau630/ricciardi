@@ -1,9 +1,8 @@
-import timeit
 import argparse
 import statistics
+import timeit
 
 import torch
-
 from ricciardi import ricciardi
 from ricciardi_interp import Ricciardi
 
@@ -53,13 +52,13 @@ def main():
         x = torch.linspace(
             -0.08, 1.0, args.N, requires_grad=requires_grad, device=device
         )
-        timings = timeit.Timer(
-            "ricciardi(x)", globals={**locals(), **globals()}
-        ).repeat(repeat=args.repeat, number=1)
+        timings = timeit.Timer("func(x)", globals={"func": ricciardi, "x": x}).repeat(
+            repeat=args.repeat, number=1
+        )
         print(f"ricciardi: {summary(timings, args.stats)}")
 
         timings = timeit.Timer(
-            "ricciardi_interp(x)", globals={**locals(), **globals()}
+            "func(x)", globals={"func": ricciardi_interp, "x": x}
         ).repeat(repeat=args.repeat, number=1)
         print(f"ricciardi_interp: {summary(timings, args.stats)}\n")
 
@@ -67,20 +66,25 @@ def main():
     timings = timeit.Timer(
         "y.backward()",
         setup=(
-            "x = torch.linspace(-0.08, 1.0, args.N, requires_grad=True, device=device);"
-            "y = ricciardi(x).sum()"
+            "x = torch.linspace(-0.08, 1.0, N, requires_grad=True, device=device);"
+            "y = func(x).sum()"
         ),
-        globals={**locals(), **globals()},
+        globals={"func": ricciardi, "torch": torch, "N": args.N, "device": device},
     ).repeat(repeat=args.repeat, number=1)
     print(f"ricciardi: {summary(timings, args.stats)}")
 
     timings = timeit.Timer(
         "y.backward()",
         setup=(
-            "x = torch.linspace(-0.08, 1.0, args.N, requires_grad=True, device=device);"
-            "y = ricciardi_interp(x).sum()"
+            "x = torch.linspace(-0.08, 1.0, N, requires_grad=True, device=device);"
+            "y = func(x).sum()"
         ),
-        globals={**locals(), **globals()},
+        globals={
+            "func": ricciardi_interp,
+            "torch": torch,
+            "N": args.N,
+            "device": device,
+        },
     ).repeat(repeat=args.repeat, number=1)
     print(f"ricciardi_interp: {summary(timings, args.stats)}")
 

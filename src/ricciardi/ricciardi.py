@@ -2,8 +2,8 @@ from collections.abc import Callable
 from typing import Union
 
 import torch
-from torch import Tensor
 from scipy import special
+from torch import Tensor
 
 sqrtpi = torch.pi**0.5
 
@@ -40,8 +40,9 @@ def fixed_quad(
         n (optional): Order of Gauss-Legendre quadrature.
 
     Returns:
-        A tuple (value, None), where value is a tensor with shape func(broadcast(a, b)).shape.
-        The additional None is for consistency with scipy.integrate.fixed_quad.
+        A tuple (value, None), where value is a tensor with shape
+        func(broadcast(a, b)).shape. The additional None is for consistency with
+        scipy.integrate.fixed_quad.
 
     """
     x, w = _cached_roots_legendre(n)
@@ -57,11 +58,15 @@ class Ierfcx(torch.autograd.Function):
         return fixed_quad(torch.special.erfcx, x, y, n=n)[0]
 
     @staticmethod
-    def setup_context(ctx, inputs, output):
+    def setup_context(ctx, inputs, _):
         ctx.save_for_backward(inputs[0], inputs[1])
+        ctx.set_materialize_grads(False)
 
     @staticmethod
     def backward(ctx, grad_output):
+        if grad_output is None:
+            return (None, None, None)
+
         x, y = ctx.saved_tensors
         grad_x = -torch.special.erfcx(x)
         grad_y = torch.special.erfcx(y)
@@ -112,17 +117,20 @@ def ricciardi(
         tau_rp (optional): Refractory period.
         V_r (optional): Reset membrane potential.
         theta (optional): Firing threshold membrane potential.
-        n (optional): Precision level, roughly equivalent to the order of Gauss-Legendre
+        n (optional): Precision level, equivalent to the order of Gauss-Legendre
           quadrature used to compute the integral of the complementary error function.
           If None, defaults to 3, 4, or 6 for input dtypes torch.bfloat16, torch.half,
           and torch.double respectively, and 5 for other (non-complex) dtypes. These
-          defaults are chosen to that with the default values of sigma, tau, tau_rp,
-          V_r, and theta, the error in the output satisfies the default PyTorch tolerances
+          defaults are chosen so that with the default values of sigma, tau, tau_rp,
+          V_r, and theta, the output errors satisfy the default PyTorch tolerances
           for the corresponding dtype as prescribed in torch.testing.assert_close.
           Generally, n needs to be increased when V_r is smaller or theta is larger.
 
     Returns:
-        Tensor of firing rates with shape broadcast(mu, sigma, tau, tau_rp, V_r, theta).shape
+        Tensor of firing rates with shape broadcast(mu, sigma, tau, tau_rp, V_r, theta)
+
+    Raises:
+        TypeError: If mu is not a Tensor or is a complex Tensor.
 
     """
     if not isinstance(mu, Tensor) or torch.is_complex(mu):

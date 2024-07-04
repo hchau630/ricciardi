@@ -2,11 +2,10 @@ import functools
 import itertools
 
 import numpy as np
-from scipy import integrate, special
-import torch
 import pytest
-
+import torch
 from ricciardi import ricciardi
+from scipy import integrate, special
 
 
 @pytest.fixture(params=itertools.product([0.01], [0.01, 0.02], [0.002], [0.01], [0.02]))
@@ -57,3 +56,11 @@ def test_ricciardi(x, params, dtype):
 )
 def test_ricciardi_grad(x, params):
     torch.autograd.gradcheck(functools.partial(ricciardi, **params), x)
+
+
+def test_ricciardi_raises():
+    with pytest.raises(TypeError):
+        ricciardi(0.0)
+
+    with pytest.raises(TypeError):
+        ricciardi(torch.tensor(1.0j))
