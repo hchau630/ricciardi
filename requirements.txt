@@ -1,5 +1,5 @@
 # test requirements
-numpy
+numpy < 2.0  # tensor.numpy() results in RuntimeError on Windows with Numpy 2.0.0
 pytest
 pytest-cov
 
