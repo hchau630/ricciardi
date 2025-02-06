@@ -53,6 +53,8 @@ def fixed_quad(
 
 
 class Ierfcx(torch.autograd.Function):
+    generate_vmap_rule = True
+
     @staticmethod
     def forward(x, y, n):
         return fixed_quad(torch.special.erfcx, x, y, n=n)[0]

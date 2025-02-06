@@ -4,8 +4,9 @@ import itertools
 import numpy as np
 import pytest
 import torch
-from ricciardi import ricciardi
 from scipy import integrate, special
+
+from ricciardi import ricciardi
 
 
 @pytest.fixture(params=itertools.product([0.01], [0.01, 0.02], [0.002], [0.01], [0.02]))
@@ -35,9 +36,13 @@ def ricciardi_exact(mu, sigma=0.01, tau=0.02, tau_rp=0.002, V_r=0.01, theta=0.02
 @pytest.mark.parametrize(
     "dtype", [torch.long, torch.bfloat16, torch.half, torch.float, torch.double]
 )
-def test_ricciardi(x, params, dtype):
+@pytest.mark.parametrize("vmap", [False, True])
+def test_ricciardi(x, params, dtype, vmap):
     x = x.to(dtype)
-    out = ricciardi(x, **params)
+    if vmap:
+        out = torch.vmap(ricciardi)(x, **params)
+    else:
+        out = ricciardi(x, **params)
     expected = ricciardi_exact(x.double().numpy(), **params)
     expected = torch.from_numpy(expected).nan_to_num()
     if torch.is_floating_point(x):
